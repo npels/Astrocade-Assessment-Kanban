@@ -1,4 +1,5 @@
-// Type definitions for the Kanban app
+// File: src/types/index.ts
+// Type definitions for the Kanban app with sort options
 
 export interface Task {
 	id: string;
@@ -27,4 +28,17 @@ export interface FilterOptions {
 	assignee?: string;
 	dueDateAfter?: string;
 	tags?: string[];
+}
+
+export type SortField =
+	| "priority"
+	| "dueDate"
+	| "createdAt"
+	| "title"
+	| "assignee";
+export type SortDirection = "asc" | "desc";
+
+export interface SortOptions {
+	field: SortField;
+	direction: SortDirection;
 }

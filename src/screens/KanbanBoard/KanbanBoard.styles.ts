@@ -87,4 +87,27 @@ export const styles = StyleSheet.create({
 		alignItems: "center",
 		...theme.shadow.md,
 	},
+	sortButton: {
+		padding: theme.spacing.sm,
+		position: "relative",
+	},
+	sortButtonActive: {
+		backgroundColor: theme.colors.primary + "10",
+		borderRadius: theme.borderRadius.md,
+	},
+	sortBanner: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		paddingHorizontal: theme.spacing.md,
+		paddingVertical: theme.spacing.sm,
+	},
+	sortBannerText: {
+		color: theme.colors.text.primary,
+		fontSize: 14,
+	},
+	sortIndicator: {
+		width: 20,
+		height: 0,
+	},
 });

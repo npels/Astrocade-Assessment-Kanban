@@ -1,7 +1,8 @@
-// Custom hook for task management with proper filtering
+// File: src/hooks/useTasks.ts
+// Custom hook for task management with filtering and sorting
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Task, FilterOptions } from "../types";
+import { Task, FilterOptions, SortOptions } from "../types";
 import { mockApi } from "../utils/mockApi";
 
 export const useTasks = () => {
@@ -9,6 +10,7 @@ export const useTasks = () => {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [filters, setFilters] = useState<FilterOptions>({});
+	const [sortOptions, setSortOptions] = useState<SortOptions | null>(null);
 
 	const fetchTasks = useCallback(async () => {
 		try {
@@ -81,9 +83,10 @@ export const useTasks = () => {
 		[allTasks]
 	);
 
-	// Filter tasks based on current filters
-	const filteredTasks = useMemo(() => {
-		return allTasks.filter((task) => {
+	// Filter and sort tasks
+	const processedTasks = useMemo(() => {
+		// First, filter tasks
+		let filtered = allTasks.filter((task) => {
 			if (filters.priority && task.priority !== filters.priority) return false;
 			if (filters.assignee && task.assignee !== filters.assignee) return false;
 			if (
@@ -98,15 +101,55 @@ export const useTasks = () => {
 				return false;
 			return true;
 		});
-	}, [allTasks, filters]);
+
+		// Then, sort if sort options are set
+		if (sortOptions) {
+			filtered = [...filtered].sort((a, b) => {
+				let compareValue = 0;
+
+				switch (sortOptions.field) {
+					case "priority":
+						const priorityOrder = { high: 3, medium: 2, low: 1 };
+						compareValue =
+							priorityOrder[a.priority] - priorityOrder[b.priority];
+						break;
+
+					case "dueDate":
+						compareValue =
+							new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+						break;
+
+					case "createdAt":
+						compareValue =
+							new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+						break;
+
+					case "title":
+						compareValue = a.title.localeCompare(b.title);
+						break;
+
+					case "assignee":
+						compareValue = a.assignee.localeCompare(b.assignee);
+						break;
+				}
+
+				// Apply sort direction
+				return sortOptions.direction === "desc" ? -compareValue : compareValue;
+			});
+		}
+
+		return filtered;
+	}, [allTasks, filters, sortOptions]);
 
 	return {
-		tasks: filteredTasks,
+		tasks: processedTasks,
 		allTasks, // Expose all tasks for getting available filters
 		loading,
 		error,
 		filters,
 		setFilters,
+		sortOptions,
+		setSortOptions,
 		createTask,
 		updateTask,
 		deleteTask,

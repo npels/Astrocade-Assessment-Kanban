@@ -25,6 +25,7 @@ import {
 } from "../../types";
 import { styles } from "./KanbanBoard.styles";
 import { theme } from "../../constants/theme";
+import { SortModal } from "../../components/SortModal/SortModal";
 
 const defaultBoardConfig: BoardConfig = {
 	sections: [
@@ -42,6 +43,8 @@ export const KanbanBoard: React.FC = () => {
 		error,
 		filters,
 		setFilters,
+		sortOptions,
+		setSortOptions,
 		createTask,
 		updateTask,
 		deleteTask,
@@ -51,6 +54,7 @@ export const KanbanBoard: React.FC = () => {
 	const [boardConfig] = useState<BoardConfig>(defaultBoardConfig);
 	const [createModalVisible, setCreateModalVisible] = useState(false);
 	const [filterModalVisible, setFilterModalVisible] = useState(false);
+	const [sortModalVisible, setSortModalVisible] = useState(false);
 	const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 	const [activeSection, setActiveSection] = useState<BoardSectionType>("todo");
 	const [refreshing, setRefreshing] = useState(false);
@@ -148,6 +152,31 @@ export const KanbanBoard: React.FC = () => {
 		<SafeAreaView style={styles.container} edges={["top"]}>
 			<View style={styles.header}>
 				<Text style={styles.headerTitle}>Kanban Board</Text>
+
+				<TouchableOpacity
+					style={[styles.sortButton, sortOptions && styles.sortButtonActive]}
+					onPress={() => setSortModalVisible(true)}
+				>
+					<Feather
+						name="bar-chart-2"
+						size={20}
+						color={
+							sortOptions ? theme.colors.primary : theme.colors.text.primary
+						}
+					/>
+					{sortOptions && (
+						<View style={styles.sortIndicator}>
+							<Feather
+								name={
+									sortOptions.direction === "asc" ? "arrow-up" : "arrow-down"
+								}
+								size={12}
+								color="#FFFFFF"
+							/>
+						</View>
+					)}
+				</TouchableOpacity>
+
 				<TouchableOpacity
 					style={[
 						styles.filterButton,
@@ -192,6 +221,15 @@ export const KanbanBoard: React.FC = () => {
 					<TouchableOpacity onPress={refetch}>
 						<Text style={styles.retryText}>Retry</Text>
 					</TouchableOpacity>
+				</View>
+			)}
+
+			{sortOptions && (
+				<View style={styles.sortBanner}>
+					<Text style={styles.sortBannerText}>
+						Sorted by {sortOptions.field} (
+						{sortOptions.direction === "asc" ? "ascending" : "descending"})
+					</Text>
 				</View>
 			)}
 
@@ -247,6 +285,13 @@ export const KanbanBoard: React.FC = () => {
 				onApply={setFilters}
 				availableAssignees={availableAssignees}
 				availableTags={availableTags}
+			/>
+
+			<SortModal
+				visible={sortModalVisible}
+				onClose={() => setSortModalVisible(false)}
+				currentSort={sortOptions}
+				onApply={setSortOptions}
 			/>
 		</SafeAreaView>
 	);
