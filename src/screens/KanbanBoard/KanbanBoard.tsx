@@ -1,6 +1,6 @@
-// Main Kanban board screen
+// Main Kanban board screen with filter functionality
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useMemo } from "react";
 import {
 	View,
 	ScrollView,
@@ -17,6 +17,7 @@ import { BoardSection } from "../../components/BoardSection/BoardSection";
 import { CreateTaskModal } from "../../components/CreateTaskModal/CreateTaskModal";
 import { TaskDetailModal } from "../../components/TaskDetailModal/TaskDetailModal";
 import { FilterBar } from "../../components/FilterBar/FilterBar";
+import { FilterModal } from "../../components/FilterModal/FilterModal";
 import {
 	Task,
 	BoardSection as BoardSectionType,
@@ -49,11 +50,31 @@ export const KanbanBoard: React.FC = () => {
 
 	const [boardConfig] = useState<BoardConfig>(defaultBoardConfig);
 	const [createModalVisible, setCreateModalVisible] = useState(false);
+	const [filterModalVisible, setFilterModalVisible] = useState(false);
 	const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 	const [activeSection, setActiveSection] = useState<BoardSectionType>("todo");
 	const [refreshing, setRefreshing] = useState(false);
 
 	const scrollViewRef = useRef<ScrollView>(null);
+
+	// Extract unique assignees and tags from all tasks
+	const { availableAssignees, availableTags } = useMemo(() => {
+		const assignees = new Set<string>();
+		const tags = new Set<string>();
+
+		// Get from ALL tasks, not just filtered ones
+		const allTasks = tasks; // This should ideally come from a separate source
+
+		allTasks.forEach((task) => {
+			assignees.add(task.assignee);
+			task.tags.forEach((tag) => tags.add(tag));
+		});
+
+		return {
+			availableAssignees: Array.from(assignees).sort(),
+			availableTags: Array.from(tags).sort(),
+		};
+	}, [tasks]);
 
 	const handleRefresh = useCallback(async () => {
 		setRefreshing(true);
@@ -110,6 +131,11 @@ export const KanbanBoard: React.FC = () => {
 		[tasks]
 	);
 
+	const hasActiveFilters = Object.values(filters).some(
+		(value) =>
+			value !== undefined && (Array.isArray(value) ? value.length > 0 : true)
+	);
+
 	if (loading && tasks.length === 0) {
 		return (
 			<View style={styles.loadingContainer}>
@@ -123,16 +149,34 @@ export const KanbanBoard: React.FC = () => {
 			<View style={styles.header}>
 				<Text style={styles.headerTitle}>Kanban Board</Text>
 				<TouchableOpacity
-					style={styles.filterButton}
-					onPress={() => {
-						// In a real app, this would open a filter modal
-						Alert.alert(
-							"Filters",
-							"Filter functionality would be implemented here"
-						);
-					}}
+					style={[
+						styles.filterButton,
+						hasActiveFilters && styles.filterButtonActive,
+					]}
+					onPress={() => setFilterModalVisible(true)}
 				>
-					<Feather name="filter" size={20} color={theme.colors.text.primary} />
+					<Feather
+						name="filter"
+						size={20}
+						color={
+							hasActiveFilters
+								? theme.colors.primary
+								: theme.colors.text.primary
+						}
+					/>
+					{hasActiveFilters && (
+						<View style={styles.filterBadge}>
+							<Text style={styles.filterBadgeText}>
+								{
+									Object.values(filters).filter(
+										(v) =>
+											v !== undefined &&
+											(Array.isArray(v) ? v.length > 0 : true)
+									).length
+								}
+							</Text>
+						</View>
+					)}
 				</TouchableOpacity>
 			</View>
 
@@ -193,6 +237,15 @@ export const KanbanBoard: React.FC = () => {
 				onClose={() => setSelectedTask(null)}
 				onUpdate={handleTaskUpdate}
 				onDelete={handleTaskDelete}
+			/>
+
+			<FilterModal
+				visible={filterModalVisible}
+				onClose={() => setFilterModalVisible(false)}
+				filters={filters}
+				onApply={setFilters}
+				availableAssignees={availableAssignees}
+				availableTags={availableTags}
 			/>
 		</SafeAreaView>
 	);

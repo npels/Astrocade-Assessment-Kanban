@@ -1,4 +1,4 @@
-// Styles for KanbanBoard screen
+// Styles for KanbanBoard screen with filter button updates
 
 import { StyleSheet } from "react-native";
 import { theme } from "../../constants/theme";
@@ -31,6 +31,28 @@ export const styles = StyleSheet.create({
 	},
 	filterButton: {
 		padding: theme.spacing.sm,
+		position: "relative",
+	},
+	filterButtonActive: {
+		backgroundColor: theme.colors.primary + "10",
+		borderRadius: theme.borderRadius.md,
+	},
+	filterBadge: {
+		position: "absolute",
+		top: 0,
+		right: 0,
+		backgroundColor: theme.colors.primary,
+		borderRadius: 10,
+		minWidth: 20,
+		height: 20,
+		justifyContent: "center",
+		alignItems: "center",
+		paddingHorizontal: 4,
+	},
+	filterBadgeText: {
+		color: "#FFFFFF",
+		fontSize: 12,
+		fontWeight: "600",
 	},
 	errorBanner: {
 		flexDirection: "row",
