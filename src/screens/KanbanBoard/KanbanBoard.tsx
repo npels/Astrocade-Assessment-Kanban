@@ -201,6 +201,7 @@ export const KanbanBoard: React.FC = () => {
 				pagingEnabled={false}
 				showsHorizontalScrollIndicator={false}
 				contentContainerStyle={styles.boardContent}
+				nestedScrollEnabled
 				refreshControl={
 					<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
 				}

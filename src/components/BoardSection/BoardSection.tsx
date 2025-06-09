@@ -57,6 +57,7 @@ export const BoardSection = memo(
 					style={styles.scrollView}
 					contentContainerStyle={styles.scrollContent}
 					showsVerticalScrollIndicator={false}
+					nestedScrollEnabled
 				>
 					<Animated.View
 						style={[
