@@ -123,4 +123,22 @@ export const styles = StyleSheet.create({
 		fontWeight: "600",
 		color: "#FFFFFF",
 	},
+	sectionOptions: {
+		flexDirection: "row",
+		gap: theme.spacing.sm,
+	},
+	sectionOption: {
+		flex: 1,
+		paddingVertical: theme.spacing.sm,
+		borderRadius: theme.borderRadius.md,
+		borderWidth: 2,
+		alignItems: "center",
+	},
+	sectionSelected: {
+		borderWidth: 2,
+	},
+	statusText: {
+		fontSize: 13,
+		fontWeight: "600",
+	},
 });

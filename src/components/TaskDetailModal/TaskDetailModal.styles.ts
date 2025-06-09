@@ -107,6 +107,7 @@ export const styles = StyleSheet.create({
 	},
 	footer: {
 		padding: theme.spacing.lg,
+		gap: theme.spacing.md,
 		borderTopWidth: 1,
 		borderTopColor: theme.colors.border,
 	},
@@ -124,5 +125,23 @@ export const styles = StyleSheet.create({
 		fontSize: 16,
 		fontWeight: "600",
 		color: theme.colors.danger,
+	},
+	sectionOptions: {
+		flexDirection: "row",
+		gap: theme.spacing.sm,
+	},
+	sectionOption: {
+		flex: 1,
+		paddingVertical: theme.spacing.sm,
+		borderRadius: theme.borderRadius.md,
+		borderWidth: 2,
+		alignItems: "center",
+	},
+	sectionSelected: {
+		borderWidth: 2,
+	},
+	statusText: {
+		fontSize: 13,
+		fontWeight: "600",
 	},
 });

@@ -10,9 +10,10 @@ import {
 	Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { Task } from "../../types";
+import { BoardSection, Task } from "../../types";
 import { styles } from "./TaskDetailModal.styles";
 import { theme } from "../../constants/theme";
+import { useBoardConfig } from "../contexts/BoardConfigContext";
 
 interface TaskDetailModalProps {
 	visible: boolean;
@@ -45,9 +46,19 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 		]);
 	};
 
+	const handleUpdateStatus = (newStatus: BoardSection) => {
+		if (status !== newStatus) {
+			setStatus(newStatus);
+			onUpdate(task.id, { status: newStatus });
+		}
+	};
+
 	const priorityColor = theme.colors.priority[task.priority];
 	const dueDate = new Date(task.dueDate);
 	const createdDate = new Date(task.createdAt);
+
+	const { boardConfig } = useBoardConfig();
+	const [status, setStatus] = useState<BoardSection>(task.status);
 
 	return (
 		<Modal
@@ -108,7 +119,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 									<Text style={styles.infoLabel}>Status</Text>
 								</View>
 								<Text style={styles.infoValue}>
-									{task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+									{status.charAt(0).toUpperCase() + status.slice(1)}
 								</Text>
 							</View>
 
@@ -154,6 +165,35 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 					</ScrollView>
 
 					<View style={styles.footer}>
+						<View style={styles.sectionOptions}>
+							{(["todo", "doing", "review", "done"] as const).map((s) => (
+								<TouchableOpacity
+									key={s}
+									style={[
+										styles.sectionOption,
+										status === s && styles.sectionSelected,
+										{ borderColor: theme.colors.section[s] },
+										status === s && {
+											backgroundColor: theme.colors.section[s] + "35",
+										},
+									]}
+									onPress={() => handleUpdateStatus(s)}
+								>
+									<Text
+										style={[
+											styles.statusText,
+											{ color: theme.colors.section[s] },
+										]}
+									>
+										{
+											boardConfig.sections.find((section) => section.id === s)
+												?.title
+										}
+									</Text>
+								</TouchableOpacity>
+							))}
+						</View>
+
 						<TouchableOpacity
 							style={styles.deleteButton}
 							onPress={handleDelete}

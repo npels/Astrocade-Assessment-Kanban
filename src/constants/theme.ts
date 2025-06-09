@@ -20,6 +20,12 @@ export const theme = {
 			medium: "#F59E0B",
 			high: "#EF4444",
 		},
+		section: {
+			todo: "#6B7280",
+			doing: "#3B82F6",
+			review: "#F59E0B",
+			done: "#10B981",
+		},
 	},
 	spacing: {
 		xs: 4,

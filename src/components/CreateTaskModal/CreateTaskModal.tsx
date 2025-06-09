@@ -16,6 +16,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { Task, BoardSection } from "../../types";
 import { styles } from "./CreateTaskModal.styles";
 import { theme } from "../../constants/theme";
+import { useBoardConfig } from "../contexts/BoardConfigContext";
 
 interface CreateTaskModalProps {
 	visible: boolean;
@@ -32,11 +33,13 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 }) => {
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
+	const [status, setStatus] = useState<BoardSection>(defaultSection);
 	const [assignee, setAssignee] = useState("");
 	const [priority, setPriority] = useState<Task["priority"]>("medium");
 	const [dueDate, setDueDate] = useState(new Date());
 	const [tags, setTags] = useState("");
 	const [showDatePicker, setShowDatePicker] = useState(false);
+	const { boardConfig } = useBoardConfig();
 
 	const handleSubmit = () => {
 		if (!title.trim()) return;
@@ -47,7 +50,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 			assignee: assignee.trim() || "Unassigned",
 			priority,
 			dueDate: dueDate.toISOString(),
-			status: defaultSection,
+			status: status,
 			tags: tags
 				.split(",")
 				.map((t) => t.trim())
@@ -61,6 +64,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 		setPriority("medium");
 		setDueDate(new Date());
 		setTags("");
+		setStatus(defaultSection);
 		onClose();
 	};
 
@@ -144,6 +148,38 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 											]}
 										>
 											{p.charAt(0).toUpperCase() + p.slice(1)}
+										</Text>
+									</TouchableOpacity>
+								))}
+							</View>
+						</View>
+
+						<View style={styles.field}>
+							<Text style={styles.label}>Status</Text>
+							<View style={styles.sectionOptions}>
+								{(["todo", "doing", "review", "done"] as const).map((s) => (
+									<TouchableOpacity
+										key={s}
+										style={[
+											styles.sectionOption,
+											status === s && styles.sectionSelected,
+											{ borderColor: theme.colors.section[s] },
+											status === s && {
+												backgroundColor: theme.colors.section[s] + "35",
+											},
+										]}
+										onPress={() => setStatus(s)}
+									>
+										<Text
+											style={[
+												styles.statusText,
+												{ color: theme.colors.section[s] },
+											]}
+										>
+											{
+												boardConfig.sections.find((section) => section.id === s)
+													?.title
+											}
 										</Text>
 									</TouchableOpacity>
 								))}

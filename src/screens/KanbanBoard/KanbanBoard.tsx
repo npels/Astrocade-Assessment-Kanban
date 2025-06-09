@@ -26,15 +26,7 @@ import {
 import { styles } from "./KanbanBoard.styles";
 import { theme } from "../../constants/theme";
 import { SortModal } from "../../components/SortModal/SortModal";
-
-const defaultBoardConfig: BoardConfig = {
-	sections: [
-		{ id: "todo", title: "To Do", color: "#6B7280" },
-		{ id: "doing", title: "In Progress", color: "#3B82F6" },
-		{ id: "review", title: "Review", color: "#F59E0B" },
-		{ id: "done", title: "Done", color: "#10B981" },
-	],
-};
+import { useBoardConfig } from "../../components/contexts/BoardConfigContext";
 
 export const KanbanBoard: React.FC = () => {
 	const {
@@ -51,7 +43,7 @@ export const KanbanBoard: React.FC = () => {
 		refetch,
 	} = useTasks();
 
-	const [boardConfig] = useState<BoardConfig>(defaultBoardConfig);
+	const { boardConfig } = useBoardConfig();
 	const [createModalVisible, setCreateModalVisible] = useState(false);
 	const [filterModalVisible, setFilterModalVisible] = useState(false);
 	const [sortModalVisible, setSortModalVisible] = useState(false);
