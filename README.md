@@ -73,124 +73,24 @@ A modern, feature-rich Kanban board application built with React Native, TypeScr
    # or
    yarn web
    ```
+## Process notes
 
-## 📦 Dependencies
+This was my first time ever using React Native (I have some limited experience with normal react for web from Kodable). Before starting the assessment, I researched how to set up my dev environment and get a project up and running, and made a very simple counter app for practice.
 
-The app uses the following key dependencies:
+I started the actual assessment by feeding the take home document into Claude Opus 4 and told it to create the app as directed (I wish I could have used Claude Code for this assessment, but unfortunately it is not supported on windows and I only have a personal windows device).
 
-- **React Native 0.76** - Core framework
-- **Expo** - Development platform
-- **TypeScript** - Type safety
-- **react-native-gesture-handler** - Touch gestures and drag-and-drop
-- **react-native-reanimated** - Smooth animations
-- **react-native-safe-area-context** - Safe area handling
-- **@expo/vector-icons** - Icon library
+It generated all of the code required for the basic functionality of the project, which I then made files for and started actually testing out the app.
 
-## 🏗️ Project Structure
+Claude's version generally worked pretty well, though there were a number of missing features. There was no filtering functionality, which was one of the requirements for the assessment, so I had it generate the code for that as well. It worked pretty well out of the box, thankfully.
 
-```
-src/
-├── components/
-│   ├── BoardSection/         # Kanban board columns
-│   ├── TaskCard/            # Individual task cards
-│   ├── CreateTaskModal/     # Task creation modal
-│   ├── TaskDetailModal/     # Task details view
-│   ├── FilterModal/         # Filter configuration
-│   ├── SortModal/          # Sort configuration
-│   ├── FilterBar/          # Active filters display
-│   ├── DragOverlay/        # Drag animation overlay
-│   └── contexts/           # React contexts
-│       ├── BoardConfigContext.tsx
-│       └── DragDropContext.tsx
-├── screens/
-│   └── KanbanBoard/        # Main board screen
-├── hooks/
-│   └── useTasks.ts         # Task management hook
-├── types/
-│   └── index.ts            # TypeScript type definitions
-├── constants/
-│   └── theme.ts            # Theme configuration
-└── utils/
-    ├── mockApi.ts          # Mock API for demo
-    └── storage.ts          # Local storage utilities
-```
+There were a couple glaring bugs as well, such as the drag-to-refresh function conflicting with scrolling up within a section. I ended up fixing that one manually with a little bit of research.
 
-## ✨ Features
+Around this time, I hit the rate limit for Claude and couldn't use it to help me anymore. I tried switching to ChatGPT, but it was generating code with quite a few errors and some sections that just did not make sense, so I was without AI assistance from then on.
 
-- **Drag and Drop**: Smoothly move tasks between columns
-- **Task Management**: Create, update, and delete tasks
-- **Filtering**: Filter by priority, assignee, due date, and tags
-- **Sorting**: Sort tasks by various criteria
-- **Responsive Design**: Works on phones and tablets
-- **Smooth Animations**: 60fps animations using Reanimated 2
-- **Mock API**: Simulates backend with realistic delays
-- **Performance**: Optimized for 1000+ tasks
+Another feature that Claude did not implement was dragging and dropping tasks; it left some skeleton functions for it, but not enough to easily complete the implementation. I figured that I would not have time to implement this myself since I am not familiar with the dependencies that would be needed and it seems like a rather complex task for a newbie to do in just a few hours.
 
-## 🔧 Configuration
+I ended up having to compromise by adding buttons within the task info modal to change a task's section. It's no drag and drop, but it works well enough for what it is. Doing this required adding a context provider so that the names and colors for each section could be globally accessed by the task info modal.
 
-### Board Sections
-The default board has four sections:
-- To Do
-- In Progress
-- Review
-- Done
+I tried briefly to implement drag and drop at the end, since I was feeling okay about the rest of the project, but I ran out of time to debug some errors that it was causing. I ended up commiting my progress on it to a separate branch `dragDrop`; I reckon I could have figured it out given another 30-60 minutes.
 
-These can be customized in `BoardConfigContext.tsx`.
-
-### Theme
-Colors and styling can be customized in `src/constants/theme.ts`.
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **"Unable to resolve module" errors**
-   ```bash
-   # Clear cache and reinstall
-   rm -rf node_modules
-   npm install
-   npm start -- --clear
-   ```
-
-2. **Gesture handler not working**
-   - Make sure you've restarted the Metro bundler after installing gesture-handler
-   - For bare React Native projects, you may need to rebuild the app
-
-3. **Animations not smooth**
-   - Ensure you're testing on a real device or release build
-   - Development builds may have reduced performance
-
-4. **iOS build issues**
-   ```bash
-   cd ios
-   pod install
-   cd ..
-   ```
-
-### Development Tips
-
-- Use `npm start -- --clear` to clear the cache if you encounter issues
-- For better performance testing, create a release build
-- The mock API generates 50 tasks by default (adjustable in `mockApi.ts`)
-
-## 📱 Platform-Specific Notes
-
-### iOS
-- Requires iOS 13.0 or later
-- Best tested on iPhone 11 or newer
-
-### Android
-- Requires Android 5.0 (API 21) or later
-- Enable hardware acceleration for best performance
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License.
+I also ran out of time to implement adding/changing sections, though the architecture should be able to support it without too many changes.
