@@ -54,4 +54,17 @@ export const styles = StyleSheet.create({
 		color: theme.colors.text.light,
 		fontSize: 14,
 	},
+	dropPlaceholder: {
+		margin: theme.spacing.md,
+		padding: theme.spacing.lg,
+		borderRadius: theme.borderRadius.md,
+		borderWidth: 2,
+		borderStyle: "dashed",
+		borderColor: theme.colors.border,
+		alignItems: "center",
+	},
+	dropPlaceholderText: {
+		fontSize: 14,
+		fontWeight: "600",
+	},
 });

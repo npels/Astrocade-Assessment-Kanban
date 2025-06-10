@@ -1,4 +1,5 @@
-// Main Kanban board screen with filter functionality
+// File: src/screens/KanbanBoard/KanbanBoard.tsx
+// Main Kanban board screen with drag and drop functionality
 
 import React, { useState, useCallback, useRef, useMemo } from "react";
 import {
@@ -12,12 +13,14 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useTasks } from "../../hooks/useTasks";
 import { BoardSection } from "../../components/BoardSection/BoardSection";
 import { CreateTaskModal } from "../../components/CreateTaskModal/CreateTaskModal";
 import { TaskDetailModal } from "../../components/TaskDetailModal/TaskDetailModal";
 import { FilterBar } from "../../components/FilterBar/FilterBar";
 import { FilterModal } from "../../components/FilterModal/FilterModal";
+import { DragOverlay } from "../../components/DragOverlay/DragOverlay";
 import {
 	Task,
 	BoardSection as BoardSectionType,
@@ -27,8 +30,12 @@ import { styles } from "./KanbanBoard.styles";
 import { theme } from "../../constants/theme";
 import { SortModal } from "../../components/SortModal/SortModal";
 import { useBoardConfig } from "../../components/contexts/BoardConfigContext";
+import {
+	DragDropProvider,
+	useDragDrop,
+} from "../../components/contexts/DragDropContext";
 
-export const KanbanBoard: React.FC = () => {
+const KanbanBoardContent: React.FC = () => {
 	const {
 		tasks,
 		loading,
@@ -44,24 +51,32 @@ export const KanbanBoard: React.FC = () => {
 	} = useTasks();
 
 	const { boardConfig } = useBoardConfig();
+	const { setTargetSection } = useDragDrop();
 	const [createModalVisible, setCreateModalVisible] = useState(false);
 	const [filterModalVisible, setFilterModalVisible] = useState(false);
 	const [sortModalVisible, setSortModalVisible] = useState(false);
 	const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 	const [activeSection, setActiveSection] = useState<BoardSectionType>("todo");
 	const [refreshing, setRefreshing] = useState(false);
+	const [dropZones, setDropZones] = useState<
+		Array<{
+			section: BoardSectionType;
+			x: number;
+			y: number;
+			width: number;
+			height: number;
+		}>
+	>([]);
 
 	const scrollViewRef = useRef<ScrollView>(null);
+	const sectionRefs = useRef<{ [key: string]: View | null }>({});
 
 	// Extract unique assignees and tags from all tasks
 	const { availableAssignees, availableTags } = useMemo(() => {
 		const assignees = new Set<string>();
 		const tags = new Set<string>();
 
-		// Get from ALL tasks, not just filtered ones
-		const allTasks = tasks; // This should ideally come from a separate source
-
-		allTasks.forEach((task) => {
+		tasks.forEach((task) => {
 			assignees.add(task.assignee);
 			task.tags.forEach((tag) => tags.add(tag));
 		});
@@ -88,6 +103,17 @@ export const KanbanBoard: React.FC = () => {
 				await updateTask(id, updates);
 			} catch (err) {
 				Alert.alert("Error", "Failed to update task");
+			}
+		},
+		[updateTask]
+	);
+
+	const handleTaskDrop = useCallback(
+		async (taskId: string, newSection: BoardSectionType) => {
+			try {
+				await updateTask(taskId, { status: newSection });
+			} catch (err) {
+				Alert.alert("Error", "Failed to move task");
 			}
 		},
 		[updateTask]
@@ -127,6 +153,49 @@ export const KanbanBoard: React.FC = () => {
 		[tasks]
 	);
 
+	const handleDropZoneEnter = useCallback(
+		(section: BoardSectionType) => {
+			setTargetSection(section);
+		},
+		[setTargetSection]
+	);
+
+	const handleDropZoneLeave = useCallback(() => {
+		setTargetSection(null);
+	}, [setTargetSection]);
+
+	const updateDropZones = useCallback(() => {
+		const zones: typeof dropZones = [];
+		let sectionsProcessed = 0;
+
+		boardConfig.sections.forEach((section) => {
+			const ref = sectionRefs.current[section.id];
+			if (ref) {
+				ref.measureInWindow((x, y, width, height) => {
+					zones.push({
+						section: section.id,
+						x,
+						y,
+						width,
+						height,
+					});
+					sectionsProcessed++;
+
+					// Update state when all sections are measured
+					if (sectionsProcessed === boardConfig.sections.length) {
+						setDropZones(zones);
+					}
+				});
+			}
+		});
+	}, [boardConfig.sections]);
+
+	// Update drop zones when layout changes
+	React.useEffect(() => {
+		const timer = setTimeout(updateDropZones, 500);
+		return () => clearTimeout(timer);
+	}, [updateDropZones]);
+
 	const hasActiveFilters = Object.values(filters).some(
 		(value) =>
 			value !== undefined && (Array.isArray(value) ? value.length > 0 : true)
@@ -141,150 +210,186 @@ export const KanbanBoard: React.FC = () => {
 	}
 
 	return (
-		<SafeAreaView style={styles.container} edges={["top"]}>
-			<View style={styles.header}>
-				<Text style={styles.headerTitle}>Kanban Board</Text>
+		<>
+			<SafeAreaView style={styles.container} edges={["top"]}>
+				<View style={styles.header}>
+					<Text style={styles.headerTitle}>Kanban Board</Text>
 
-				<TouchableOpacity
-					style={[styles.sortButton, sortOptions && styles.sortButtonActive]}
-					onPress={() => setSortModalVisible(true)}
-				>
-					<Feather
-						name="bar-chart-2"
-						size={20}
-						color={
-							sortOptions ? theme.colors.primary : theme.colors.text.primary
-						}
-					/>
-					{sortOptions && (
-						<View style={styles.sortIndicator}>
+					<View style={styles.headerActions}>
+						<TouchableOpacity
+							style={[
+								styles.sortButton,
+								sortOptions && styles.sortButtonActive,
+							]}
+							onPress={() => setSortModalVisible(true)}
+						>
 							<Feather
-								name={
-									sortOptions.direction === "asc" ? "arrow-up" : "arrow-down"
+								name="bar-chart-2"
+								size={20}
+								color={
+									sortOptions ? theme.colors.primary : theme.colors.text.primary
 								}
-								size={12}
-								color="#FFFFFF"
+							/>
+							{sortOptions && (
+								<View style={styles.sortIndicator}>
+									<Feather
+										name={
+											sortOptions.direction === "asc"
+												? "arrow-up"
+												: "arrow-down"
+										}
+										size={12}
+										color="#FFFFFF"
+									/>
+								</View>
+							)}
+						</TouchableOpacity>
+
+						<TouchableOpacity
+							style={[
+								styles.filterButton,
+								hasActiveFilters && styles.filterButtonActive,
+							]}
+							onPress={() => setFilterModalVisible(true)}
+						>
+							<Feather
+								name="filter"
+								size={20}
+								color={
+									hasActiveFilters
+										? theme.colors.primary
+										: theme.colors.text.primary
+								}
+							/>
+							{hasActiveFilters && (
+								<View style={styles.filterBadge}>
+									<Text style={styles.filterBadgeText}>
+										{
+											Object.values(filters).filter(
+												(v) =>
+													v !== undefined &&
+													(Array.isArray(v) ? v.length > 0 : true)
+											).length
+										}
+									</Text>
+								</View>
+							)}
+						</TouchableOpacity>
+					</View>
+				</View>
+
+				<FilterBar
+					filters={filters}
+					onFiltersChange={setFilters}
+					taskCount={tasks.length}
+				/>
+
+				{error && (
+					<View style={styles.errorBanner}>
+						<Text style={styles.errorText}>{error}</Text>
+						<TouchableOpacity onPress={refetch}>
+							<Text style={styles.retryText}>Retry</Text>
+						</TouchableOpacity>
+					</View>
+				)}
+
+				{sortOptions && (
+					<View style={styles.sortBanner}>
+						<Text style={styles.sortBannerText}>
+							Sorted by {sortOptions.field} (
+							{sortOptions.direction === "asc" ? "ascending" : "descending"})
+						</Text>
+					</View>
+				)}
+
+				<ScrollView
+					ref={scrollViewRef}
+					horizontal
+					pagingEnabled={false}
+					showsHorizontalScrollIndicator={false}
+					contentContainerStyle={styles.boardContent}
+					nestedScrollEnabled
+					refreshControl={
+						<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+					}
+					onLayout={updateDropZones}
+				>
+					{boardConfig.sections.map((section) => (
+						<View
+							key={section.id}
+							ref={(ref) => {
+								if (ref) {
+									sectionRefs.current[section.id] = ref;
+								}
+							}}
+							collapsable={false}
+						>
+							<BoardSection
+								sectionId={section.id}
+								title={section.title}
+								color={section.color}
+								tasks={getTasksForSection(section.id)}
+								onTaskPress={handleTaskPress}
+								onTaskDrop={handleTaskDrop}
 							/>
 						</View>
-					)}
-				</TouchableOpacity>
+					))}
+				</ScrollView>
 
 				<TouchableOpacity
-					style={[
-						styles.filterButton,
-						hasActiveFilters && styles.filterButtonActive,
-					]}
-					onPress={() => setFilterModalVisible(true)}
+					style={styles.fab}
+					onPress={() => handleOpenCreateModal("todo")}
 				>
-					<Feather
-						name="filter"
-						size={20}
-						color={
-							hasActiveFilters
-								? theme.colors.primary
-								: theme.colors.text.primary
-						}
-					/>
-					{hasActiveFilters && (
-						<View style={styles.filterBadge}>
-							<Text style={styles.filterBadgeText}>
-								{
-									Object.values(filters).filter(
-										(v) =>
-											v !== undefined &&
-											(Array.isArray(v) ? v.length > 0 : true)
-									).length
-								}
-							</Text>
-						</View>
-					)}
+					<Feather name="plus" size={24} color="#FFFFFF" />
 				</TouchableOpacity>
-			</View>
 
-			<FilterBar
-				filters={filters}
-				onFiltersChange={setFilters}
-				taskCount={tasks.length}
+				<CreateTaskModal
+					visible={createModalVisible}
+					onClose={() => setCreateModalVisible(false)}
+					onSubmit={handleCreateTask}
+					defaultSection={activeSection}
+				/>
+
+				<TaskDetailModal
+					visible={!!selectedTask}
+					task={selectedTask}
+					onClose={() => setSelectedTask(null)}
+					onUpdate={handleTaskUpdate}
+					onDelete={handleTaskDelete}
+				/>
+
+				<FilterModal
+					visible={filterModalVisible}
+					onClose={() => setFilterModalVisible(false)}
+					filters={filters}
+					onApply={setFilters}
+					availableAssignees={availableAssignees}
+					availableTags={availableTags}
+				/>
+
+				<SortModal
+					visible={sortModalVisible}
+					onClose={() => setSortModalVisible(false)}
+					currentSort={sortOptions}
+					onApply={setSortOptions}
+				/>
+			</SafeAreaView>
+
+			<DragOverlay
+				onDropZoneEnter={handleDropZoneEnter}
+				onDropZoneLeave={handleDropZoneLeave}
+				dropZones={dropZones}
 			/>
+		</>
+	);
+};
 
-			{error && (
-				<View style={styles.errorBanner}>
-					<Text style={styles.errorText}>{error}</Text>
-					<TouchableOpacity onPress={refetch}>
-						<Text style={styles.retryText}>Retry</Text>
-					</TouchableOpacity>
-				</View>
-			)}
-
-			{sortOptions && (
-				<View style={styles.sortBanner}>
-					<Text style={styles.sortBannerText}>
-						Sorted by {sortOptions.field} (
-						{sortOptions.direction === "asc" ? "ascending" : "descending"})
-					</Text>
-				</View>
-			)}
-
-			<ScrollView
-				ref={scrollViewRef}
-				horizontal
-				pagingEnabled={false}
-				showsHorizontalScrollIndicator={false}
-				contentContainerStyle={styles.boardContent}
-				nestedScrollEnabled
-				refreshControl={
-					<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-				}
-			>
-				{boardConfig.sections.map((section) => (
-					<BoardSection
-						key={section.id}
-						sectionId={section.id}
-						title={section.title}
-						color={section.color}
-						tasks={getTasksForSection(section.id)}
-						onTaskPress={handleTaskPress}
-					/>
-				))}
-			</ScrollView>
-
-			<TouchableOpacity
-				style={styles.fab}
-				onPress={() => handleOpenCreateModal("todo")}
-			>
-				<Feather name="plus" size={24} color="#FFFFFF" />
-			</TouchableOpacity>
-
-			<CreateTaskModal
-				visible={createModalVisible}
-				onClose={() => setCreateModalVisible(false)}
-				onSubmit={handleCreateTask}
-				defaultSection={activeSection}
-			/>
-
-			<TaskDetailModal
-				visible={!!selectedTask}
-				task={selectedTask}
-				onClose={() => setSelectedTask(null)}
-				onUpdate={handleTaskUpdate}
-				onDelete={handleTaskDelete}
-			/>
-
-			<FilterModal
-				visible={filterModalVisible}
-				onClose={() => setFilterModalVisible(false)}
-				filters={filters}
-				onApply={setFilters}
-				availableAssignees={availableAssignees}
-				availableTags={availableTags}
-			/>
-
-			<SortModal
-				visible={sortModalVisible}
-				onClose={() => setSortModalVisible(false)}
-				currentSort={sortOptions}
-				onApply={setSortOptions}
-			/>
-		</SafeAreaView>
+export const KanbanBoard: React.FC = () => {
+	return (
+		<GestureHandlerRootView style={{ flex: 1 }}>
+			<DragDropProvider>
+				<KanbanBoardContent />
+			</DragDropProvider>
+		</GestureHandlerRootView>
 	);
 };

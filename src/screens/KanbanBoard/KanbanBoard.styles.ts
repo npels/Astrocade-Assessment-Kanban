@@ -110,4 +110,9 @@ export const styles = StyleSheet.create({
 		width: 20,
 		height: 0,
 	},
+	headerActions: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: theme.spacing.sm,
+	},
 });
